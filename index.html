@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+<title>Socket.IO chat</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font: 13px Helvetica, Arial; }
+form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+#messages { list-style-type: none; margin: 0; padding: 0; }
+#messages li { padding: 5px 10px; }
+#messages li:nth-child(odd) { background: #eee; }
+#messages { margin-bottom: 40px }
+#typing { color: white;height: 10px }
+</style>
+</head>
+<body>
+<ul id="messages"></ul>
+<form action="">
+<input id="m" autocomplete="off" /><button>Send</button>
+<br />
+<div id="typing"></div>
+</form>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+$(function () {
+    var socket = io();
+    // ユーザ名をランダムに生成
+    var userName = 'ゲスト' + Math.floor(Math.random() * 100);
+    // ユーザの入室を送る
+    socket.emit('enter room', userName);
+
+    $("#m").focus(function(){
+        console.log("forcus");
+        socket.emit('typing now', userName);
+    }).blur(function(){
+        console.log("blur");
+        socket.emit('typing end', userName);
+    });
+
+    $('form').submit(function(){
+        var data = JSON.stringify({user:userName,msg:$('#m').val()});
+        socket.emit('chat message', data);
+        $('#m').val('');
+        return false;
+    });
+    socket.on('receive message', function(msg){
+        $('#messages').append($('<li>').text(msg));
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+    socket.on('send message', function(json){
+        // 受信したメッセージを復元
+        var data = JSON.parse(json);
+
+        $('#messages').append($('<li>').html(data.msg+"<br>"+data.time));
+        $('#m').blur();
+        $('#typing').empty();
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+    socket.on('typing now', function(msg){
+        // 受信したメッセージを復元
+        $('#typing').text(msg);
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+    socket.on('typing end', function(msg){
+        // 受信したメッセージを復元
+        console.log("end");
+        $('#typing').empty();
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+});
+</script>
+</body>
+</html>
